@@ -38,7 +38,7 @@ done
 
 # Prompt Alchemy API
 while [[ -z "$APIKEY_ALCHEMY" ]]; do
-    read -p "API Key Alchemy (tidak boleh kosong): " APIKEY_ALCHEMY
+    read -p "API Key Infura (tidak boleh kosong): " APIKEY_ALCHEMY
     echo
 done
 
@@ -51,7 +51,7 @@ done
 INSTALL_DIR="/home/$EXECUTOR_USER/t3rn"
 SERVICE_FILE="/etc/systemd/system/t3rn-executor.service"
 ENV_FILE="/etc/t3rn-executor.env"
-EXECUTOR_VERSION="v0.63.1"
+EXECUTOR_VERSION=$(curl -s https://api.github.com/repos/t3rn/executor-release/releases/latest | grep 'tag_name' | cut -d\" -f4)
 EXECUTOR_FILE="executor-linux-$EXECUTOR_VERSION.tar.gz"
 EXECUTOR_URL="https://github.com/t3rn/executor-release/releases/download/$EXECUTOR_VERSION/$EXECUTOR_FILE"
 
@@ -91,11 +91,11 @@ sudo bash -c "cat > $ENV_FILE" <<EOL
 RPC_ENDPOINTS='{
   "l2rn": ["https://t3rn-b2n.blockpi.network/v1/rpc/public", "http://b2n.rpc.caldera.xyz/http"],
   "mont": ["https://testnet-rpc.monad.xyz"],
-  "arbt": ["https://arbitrum-sepolia.drpc.org", "https://arb-sepolia.g.alchemy.com/v2/$APIKEY_ALCHEMY"],
-  "bast": ["https://base-sepolia-rpc.publicnode.com", "https://base-sepolia.g.alchemy.com/v2/$APIKEY_ALCHEMY"],
-  "blst": ["https://sepolia.blast.io", "https://blast-sepolia.g.alchemy.com/v2/$APIKEY_ALCHEMY"],
-  "opst": ["https://sepolia.optimism.io", "https://opt-sepolia.g.alchemy.com/v2/$APIKEY_ALCHEMY"],
-  "unit": ["https://unichain-sepolia.drpc.org", "https://unichain-sepolia.g.alchemy.com/v2/$APIKEY_ALCHEMY"]
+  "arbt": ["https://arbitrum-sepolia.drpc.org", "https://arbitrum-sepolia.infura.io/v3/$APIKEY_ALCHEMY"],
+  "bast": ["https://base-sepolia-rpc.publicnode.com", "https://base-sepolia.infura.io/v3/$APIKEY_ALCHEMY"],
+  "blst": ["https://sepolia.blast.io", "https://blast-sepolia.infura.io/v3/$APIKEY_ALCHEMY"],
+  "opst": ["https://sepolia.optimism.io", "https://optimism-sepolia.infura.io/v3/$APIKEY_ALCHEMY"],
+  "unit": ["https://unichain-sepolia.drpc.org", "https://unichain-sepolia.infura.io/v3/$APIKEY_ALCHEMY"]
 }'
 EXECUTOR_MAX_L3_GAS_PRICE="$GAS_PRICE"
 PRIVATE_KEY_LOCAL="$PRIVATE_KEY_LOCAL"
