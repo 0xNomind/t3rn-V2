@@ -18,14 +18,14 @@ echo "
 read -p "Masukkan nama user untuk menjalankan executor (default: root): " EXECUTOR_USER
 EXECUTOR_USER=${EXECUTOR_USER:-root}
 
-# Menghentikan dan menghapus service lama jika ada
+# Hentikan dan hapus service lama jika ada
 if systemctl list-units --full -all | grep -q "t3rn-executor.service"; then
     sudo systemctl stop t3rn-executor.service
     sudo systemctl disable t3rn-executor.service
     sudo systemctl daemon-reload
 fi
 
-# Menghapus file lama
+# Hapus file lama
 sudo rm -rf /home/$EXECUTOR_USER/t3rn
 sudo rm -rf /etc/systemd/system/t3rn-executor.service
 sudo rm -rf /etc/t3rn-executor.env
@@ -36,9 +36,9 @@ while [[ -z "$PRIVATE_KEY_LOCAL" ]]; do
     echo ""
 done
 
-# Prompt Alchemy API
-while [[ -z "$APIKEY_ALCHEMY" ]]; do
-    read -p "API Key Infura (tidak boleh kosong): " APIKEY_ALCHEMY
+# Prompt Alchemy API Keys
+while [[ -z "$APIKEY_ALCHEMY_LIST" ]]; do
+    read -p "Masukkan semua API Key INFURA (pisahkan dengan koma): " APIKEY_ALCHEMY_LIST
     echo
 done
 
@@ -47,6 +47,32 @@ while [[ -z "$GAS_PRICE" ]]; do
     read -p "Gas Price (tidak boleh kosong): " GAS_PRICE
     echo
 done
+
+# Proses API keys menjadi array
+IFS=',' read -ra APIKEYS <<< "$APIKEY_ALCHEMY_LIST"
+
+# Build URLs
+ARBT_URLS=""
+BAST_URLS=""
+BLST_URLS=""
+OPST_URLS=""
+UNIT_URLS=""
+
+for api in "${APIKEYS[@]}"; do
+    api_cleaned=$(echo "$api" | xargs)  # Hapus spasi
+    ARBT_URLS+="\"https://arbitrum-sepolia.infura.io/v3/$api_cleaned\", "
+    BAST_URLS+="\"https://base-sepolia.infura.io/v3/$api_cleaned\", "
+    BLST_URLS+="\"https://blast-sepolia.infura.io/v3/$api_cleaned\", "
+    OPST_URLS+="\"https://optimism-sepolia.infura.io/v3/$api_cleaned\", "
+    UNIT_URLS+="\"https://unichain-sepolia.infura.io/v3/$api_cleaned\", "
+done
+
+# Hilangkan koma terakhir
+ARBT_URLS=${ARBT_URLS%, }
+BAST_URLS=${BAST_URLS%, }
+BLST_URLS=${BLST_URLS%, }
+OPST_URLS=${OPST_URLS%, }
+UNIT_URLS=${UNIT_URLS%, }
 
 INSTALL_DIR="/home/$EXECUTOR_USER/t3rn"
 SERVICE_FILE="/etc/systemd/system/t3rn-executor.service"
@@ -77,7 +103,7 @@ tar -xzvf "$EXECUTOR_FILE" || {
 # Bersihkan file unduhan
 rm -f "$EXECUTOR_FILE"
 
-# Pastikan direktori yang diperlukan ada sebelum masuk
+# Pindah ke direktori executor
 if [ -d "executor/executor/bin" ]; then
     cd executor/executor/bin || exit 1
     echo "✅ Executor berhasil diunduh dan diekstrak."
@@ -91,11 +117,11 @@ sudo bash -c "cat > $ENV_FILE" <<EOL
 RPC_ENDPOINTS='{
   "l2rn": ["https://t3rn-b2n.blockpi.network/v1/rpc/public", "http://b2n.rpc.caldera.xyz/http"],
   "mont": ["https://testnet-rpc.monad.xyz"],
-  "arbt": ["https://arbitrum-sepolia.drpc.org", "https://arbitrum-sepolia.infura.io/v3/$APIKEY_ALCHEMY"],
-  "bast": ["https://base-sepolia-rpc.publicnode.com", "https://base-sepolia.infura.io/v3/$APIKEY_ALCHEMY"],
-  "blst": ["https://sepolia.blast.io", "https://blast-sepolia.infura.io/v3/$APIKEY_ALCHEMY"],
-  "opst": ["https://sepolia.optimism.io", "https://optimism-sepolia.infura.io/v3/$APIKEY_ALCHEMY"],
-  "unit": ["https://unichain-sepolia.drpc.org", "https://unichain-sepolia.infura.io/v3/$APIKEY_ALCHEMY"]
+  "arbt": [$ARBT_URLS],
+  "bast": [$BAST_URLS],
+  "blst": [$BLST_URLS],
+  "opst": [$OPST_URLS],
+  "unit": [$UNIT_URLS]
 }'
 EXECUTOR_MAX_L3_GAS_PRICE="$GAS_PRICE"
 PRIVATE_KEY_LOCAL="$PRIVATE_KEY_LOCAL"
